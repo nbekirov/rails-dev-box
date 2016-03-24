@@ -16,15 +16,25 @@ echo '/swapfile none swap defaults 0 0' >> /etc/fstab
 echo updating package information
 apt-add-repository -y ppa:brightbox/ruby-ng >/dev/null 2>&1
 apt-get -y update >/dev/null 2>&1
+apt-get -y dist-upgrade >/dev/null 2>&1
+apt-get -y autoremove >/dev/null 2>&1
 
-install 'development tools' build-essential
+install 'development tools' build-essential patch pkg-config
 
-install Ruby ruby2.3 ruby2.3-dev
-update-alternatives --set ruby /usr/bin/ruby2.3 >/dev/null 2>&1
-update-alternatives --set gem /usr/bin/gem2.3 >/dev/null 2>&1
+su vagrant <<'EOF'
+  echo configuring RubyGems
+  # Configure gem documentation
+  echo "gem: --no-ri --no-rdoc" > ~/.gemrc
 
-echo installing Bundler
-gem install bundler -N >/dev/null 2>&1
+  echo installing RVM
+  gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+  \curl -sSL https://get.rvm.io | bash
+  source /home/vagrant/.rvm/scripts/rvm
+  rvm install 2.3.0
+
+  echo installing Bundler
+  gem install bundler -N >/dev/null 2>&1
+EOF
 
 install Git git
 install SQLite sqlite3 libsqlite3-dev
@@ -54,5 +64,17 @@ install 'ExecJS runtime' nodejs
 
 # Needed for docs generation.
 update-locale LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LC_ALL=en_US.UTF-8
+
+su vagrant <<'EOF'
+  echo configuring Git
+  git config --global core.autocrlf true
+
+  # Configure Git credentials
+  git config --global user.name "Nikolay Bekirov"
+  git config --global user.email nbekirov@gmail.com
+
+  echo configuring editor
+  echo "export VISUAL=vim" >> ~/.bashrc
+EOF
 
 echo 'all set, rock on!'
